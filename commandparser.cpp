@@ -93,21 +93,23 @@ void CommandParser::printInfo(int info)
     switch(info)
     {
         case ASK_HELP:
-            cout <<"                                                                       -S \"1,2,3,4\"      -T\n"
-                 <<"                                                                            |                    |        -p num,num\n"
-                 <<"                                                                            |                    |        -s num\n"
-                 <<"                                                                            |                    |        -a ACK\n"
-                 <<"                                                                            |                    |        -f  0x0F,0x0F\n"
-                 <<"                                                                            |                    |        -w window\n"
-                 <<"                                                                            |                    |        -c\n"
-                 <<"monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B \"001101\"     -M      -P tcp    -u               -N             -L 2 ...\n"
-                 <<"                                                                            |                    |        -t Tser,Tech\n"
-                 <<"                                                                            |                    |        -i 0\n"
-                 <<"                                                                            |                    |        -m\n"
-                 <<"                                                                            |                    |        -o\n"
-                 <<"                                                                            |                    |        -e\n"
-                 <<"                                                                            |                    |        -r remove\n"
-                 <<"                                                                       -F \"2x+3\"          -D\n";
+            cout <<"                                                     -S \"1,2,3,4\"         -T 1\n"
+                 <<"                                                                            |        |        -p num,num\n"
+                 <<"                                                                            |        |        -s num\n"
+                 <<"                                                                            |        |        -a ACK\n"
+                 <<"                                                                            |        |        -f  0x0F,0x0F\n"
+                 <<"                                                                            |        |        -w window\n"
+                 <<"                                                                            |        |        -c\n"
+                 <<"monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B \"001101\"          -M      -P tcp    -u        -N ...   -L 2 ...\n"
+                 <<"                                                                            |        |        -t Tser,Tech\n"
+                 <<"                                                                            |        |        -i 0\n"
+                 <<"                                                                            |        |        -m\n"
+                 <<"                                                                            |        |        -o\n"
+                 <<"                                                                            |        |        -e\n"
+                 <<"                                                                            -R 1     |        -r remove\n"
+                 <<"                                                     -F \"2x+3\"            -D\n"; 
+                 <<"         interface       layer      count                                   Drop/Repeat/Modify/Timedelay\n";
+                 <<"                              direction    gap       Function/Sequence/Bitmap       protocol  options\n";
         break;
 
         default:

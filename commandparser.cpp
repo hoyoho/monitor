@@ -1,6 +1,11 @@
+#include "logger.h"
 #include "commandparser.h"
+#include <cstring>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 using namespace std;
 /*-------------------------------------------------------------------------------------------
@@ -9,7 +14,7 @@ using namespace std;
                                                                             |                    |                -s num
                                                                             |                    |                -a ACK
                                                                             |                    |                -f  0x0F,0x0F
-                                                                            |                    |                -w window    
+                                                                            |                    |                -w window
                                                                             |                    |                -c
 monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B "001101"      -M  -P tcp    -u                       -N  -L 2
                                                                             |                    |                -t Tser,Tech
@@ -24,67 +29,112 @@ monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B "001101"      -M  -P tcp
 //拆分字符串
 //接口+  层
            //正反
-           
+
 
 
 CommandParser::CommandParser(int argc, char* argv[])
-{ 
+{
+    // 初始化logger
+    auto console = Logger::getLogger();
     //公共解析部分
-    if (argc < 2)
+    vector<string> command;
+    for(vector<string>::size_type i = 0; i < argc; i++)
     {
-       printInfo(ASK_HELP);
-       return;
+        command.push_back(string(argv[i]));
     }
-    
-    string cmdString(argv[1]);
-    if( (cmdString.find("-L") == string::npos) || 
-        (cmdString.find("-I") == string::npos) || 
-        (cmdString.find("-I") > cmdString.find("-L")))
+
+    //提取接口
+    if(command.size() < 3)//monitor  -I interface,interface
     {
+        //这里可以根据用户已经输入的参数多少
+        //提供更加精准的帮助内容
         printInfo(ASK_HELP);
         return;
     }
-    //语句拆分,分stage  填装参数
-    
-    int lastPosi = 0;
-    int currentPosi = 0;
-    while((currentPosi = cmdString.find("-L"), lastPosi + 2) != string::npos)
-    {   
-        createStagePara(cmdString.substr(lastPosi, currentPosi - lastPosi));
-        lastPosi = currentPosi;
+    auto it = command.begin() + 1;
+    if(*it != "-I")
+    {
+        //这里可以根据用户已经输入的参数多少
+        //提供更加精准的帮助内容
+        printInfo(ASK_HELP);
+        return;
     }
-    createStagePara(cmdString.substr(lastPosi, cmdString.size() - lastPosi));
+    createStagePara(vector<string>(it, it + 2));
+
+
+    //提取stage
+    if(command.size() < 5)//monitor  -I interface,interface -L 1
+    {
+        //这里可以根据用户已经输入的参数多少
+        //提供更加精准的帮助内容
+        printInfo(ASK_HELP);
+        return;
+    }
+    it = command.begin() + 3;
+    if(*it != "-L")
+    {
+        //这里可以根据用户已经输入的参数多少
+        //提供更加精准的帮助内容
+        printInfo(ASK_HELP);
+        return;
+    }
+    auto tailIt = it + 1;
+    while(true)
+    {
+       if(tailIt == command.end())
+       {
+            createStagePara(vector<string>(it, tailIt));
+            break;
+       }
+       if(*tailIt == "-L")
+       {
+            createStagePara(vector<string>(it, tailIt));
+            it = tailIt;
+       }
+       ++tailIt;
+    }
 }
 
-int CommandParser::createStagePara(string cmd)
-{   
-    Parameter* temp = new Parameter;
-    int posiLeft = 0;
-    int posiRight = 0;
-    if(posiLeft = cmd.find("-I") != string::npos)
-    {
-        posiLeft = cmd.find_first_of(' ', posiLeft);
-        posiLeft = cmd.find_first_not_of(' ', posiLeft);
-        posiRight = cmd.find_first_of(' ', posiLeft);
-        string interface(cmd.substr(posiLeft,posiRight - posiLeft));
-        std::strcpy(temp -> src, src); 
+
+class Parameter
+{
+    private:
+        const static int MAX_INTERFACE_LEN = 40;
+    public:
+        unsigned int    flag;
+        char            src[MAX_INTERFACE_LEN];
+        char            dst[MAX_INTERFACE_LEN];
+        unsigned int    gap;
+        unsigned int    stageId;
+        std::vector<unsigned int> choSequence;
+        bool validity;
         
-        return 0;
+};
+
+int CommandParser::createStagePara(const vector<string>& paraCmd)
+{
+
+    auto console = Logger::getLogger();
+    Parameter* pPara = new Parameter();
+    if(paraCmd[0] == "-I")
+    {
+        strcpy(pPara->src, strtok(paraCmd.c_str(), ", "));
+        strcpy(pPara->dst, strtok(NULL, paraCmd.c_str()));
+        pPara->stageId = 0;
+        vParameter.push_back(*pPara);
     }
-    
-    if(posiLeft = cmd.find("-I") != string::npos)
+    if(paraCmd[0] == "-L")
     {
-        posiLeft = cmd.find_first_of(' ', posiLeft);
-        posiLeft = cmd.find_first_not_of(' ', posiLeft);
-        posiRight = cmd.find_first_of(' ', posiLeft);
-        string interface(cmd.substr(posiLeft,posiRight - posiLeft));
-        std::strcpy(temp -> src, src); 
-        
-        return 0;
+        pPara->stageId = 0;
+        vParameter.push_back(*pPara);
     }
 
-    
-    vParameter.push_back(*temp);
+
+
+    for(auto it = para.begin(); it != para.end(); ++it)
+    {
+        console->debug(*it);
+    }
     return 0;
 }
 
@@ -93,23 +143,24 @@ void CommandParser::printInfo(int info)
     switch(info)
     {
         case ASK_HELP:
-            cout <<"                                                     -S \"1,2,3,4\"         -T 1\n"
-                 <<"                                                                            |        |        -p num,num\n"
-                 <<"                                                                            |        |        -s num\n"
-                 <<"                                                                            |        |        -a ACK\n"
-                 <<"                                                                            |        |        -f  0x0F,0x0F\n"
-                 <<"                                                                            |        |        -w window\n"
-                 <<"                                                                            |        |        -c\n"
-                 <<"monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B \"001101\"          -M      -P tcp    -u        -N ...   -L 2 ...\n"
-                 <<"                                                                            |        |        -t Tser,Tech\n"
-                 <<"                                                                            |        |        -i 0\n"
-                 <<"                                                                            |        |        -m\n"
-                 <<"                                                                            |        |        -o\n"
-                 <<"                                                                            |        |        -e\n"
-                 <<"                                                                            -R 1     |        -r remove\n"
-                 <<"                                                     -F \"2x+3\"            -D\n"; 
-                 <<"         interface       layer      count                                   Drop/Repeat/Modify/Timedelay\n";
+            cout <<"                                                     -S \"1,2,3,4\"         \t-T 1\n"
+                 <<"                                                                            \t|          ________ -p num,num\n"
+                 <<"                                                                            \t|          |        -s num\n"
+                 <<"                                                                            \t|          |        -a ACK\n"
+                 <<"                                                                            \t|          |        -f  0x0F,0x0F\n"
+                 <<"                                                                            \t|          |        -w window\n"
+                 <<"                                                                            \t|          |        -c\n"
+                 <<"monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B \"001101\"          \t-M      -P tcp      -u               -N ...   -L 2 ...\n"
+                 <<"                                                                            \t|          |        -t Tser,Tech\n"
+                 <<"                                                                            \t|          |        -i 0\n"
+                 <<"                                                                            \t|          |        -m\n"
+                 <<"                                                                            \t|          |        -o\n"
+                 <<"                                                                            \t|          |_______ -e\n"
+                 <<"                                                                            \t-R 1              -r remove\n"
+                 <<"                                                     -F \"2x+3\"            \t-D\n"
+                 <<"         interface       layer      count                                   \tDrop/Repeat/Modify/Timedelay\n"
                  <<"                              direction    gap       Function/Sequence/Bitmap       protocol  options\n";
+
         break;
 
         default:
@@ -122,9 +173,11 @@ unsigned int CommandParser::getStageCount()
     return stageCount;
 }
 
-Parameter& CommandParser::getParameter(int i)
-{ 
-   return vParameter[i];
+Parameter& CommandParser::getParameter(int stage)
+{
+   if(stage >= vParameter.size())
+        exit(0);
+   else
+       return vParameter[stage];
 }
-
 

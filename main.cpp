@@ -2,25 +2,30 @@
 #include <vector>
 #include <csignal>
 #include <pthread.h>
-
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "commandparser.h"
 #include "monitor.h"
+#include "logger.h"
 
 using namespace std;
 
 void signalHandler( int sigNum );
 void*  singleStageProcess(void* parameter);
 
-vector<pthread_t> pidVector; 
+vector<pthread_t> pidVector;
 int main( int argc, char* argv[] )
 {
+// 初始化logger
+    auto console = Logger::getLogger();
+    
 //绑定信号处理函数
-   	signal( SIGINT, signalHandler );  
+   	signal( SIGINT, signalHandler );
 //解析参数
 	CommandParser parser(argc, argv);
     if(parser.getStageCount() == 0)
         exit(0);
-//建立线程    
+//建立线程    l
     for(unsigned i = parser.getStageCount(); i > 0; i--)
     {
         pthread_t* pPid = new pthread_t;
@@ -28,7 +33,7 @@ int main( int argc, char* argv[] )
         int status = pthread_create( pPid, NULL, singleStageProcess, pTempPara );
         if ( status != 0 )
         {
-            cerr << "thread create fail." << endl;
+            console->error("thread create fail.");
             exit(1);
         }
         pidVector.push_back( *pPid );
@@ -44,7 +49,7 @@ int main( int argc, char* argv[] )
 
 
 void signalHandler( int sigNum )
-{   
+{
     switch(sigNum)
     {
         default:
@@ -65,7 +70,7 @@ void signalHandler( int sigNum )
 -----------------------------------------*/
 void* singleStageProcess(void* parameter)
 {
-    
+
     Parameter* pTempPara = static_cast < Parameter* > ( parameter );
 	//Monitor monitor(paraser.parameter());
 	cout << "i amd stage " << endl;

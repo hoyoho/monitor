@@ -12,8 +12,11 @@ class CommandParser
         enum {ASK_HELP = 0};
         unsigned int stageCount;
         std::vector<Parameter> vParameter;
+
         void printInfo(int info);
+        std::vector<std::string>  split(std::string s, char delim);
         int createStagePara(const std::vector<std::string>& para);
+        int createInterfacePara(const vector<string>& paraCmd);
     public:
         
         CommandParser(int argc, char* argv[]);

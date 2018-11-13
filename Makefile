@@ -1,6 +1,5 @@
 CXX=g++ -std=c++11
-objects = main.o commandparser.o monitor.o
-
+objects = main.o commandparser.o monitor.o logger.o
 monitor2 : $(objects)
 	g++ -o monitor2 $(objects) -pthread
 
@@ -8,6 +7,7 @@ monitor2 : $(objects)
 $(objects)  : parameter.h
 commandparser.o : commandparser.h
 monitor.o : monitor.h
+logger.o:logger.h
 
 .PHONY : clean
 clean :

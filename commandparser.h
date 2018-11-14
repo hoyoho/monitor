@@ -11,12 +11,14 @@ class CommandParser
         
         enum {ASK_HELP = 0};
         unsigned int stageCount;
-        std::vector<Parameter> vParameter;
+        std::vector<Parameter> vPositiveParameter;
+        std::vector<Parameter> vNegitiveParameter;
 
         void printInfo(int info);
         std::vector<std::string>  split(std::string s, char delim);
-        int createStagePara(const std::vector<std::string>& para);
-        int createInterfacePara(const vector<string>& paraCmd);
+        bool fillOption(Parameter* pPara, const std::vector<std::string>& paraOption);
+        bool createStagePara(const std::vector<std::string>& para);
+        bool createInterfacePara(const std::vector<std::string>& paraCmd);
     public:
         
         CommandParser(int argc, char* argv[]);

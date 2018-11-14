@@ -17,7 +17,7 @@ using namespace std;
                                                                             |                    |                -f  0x0F,0x0F
                                                                             |                    |                -w window
                                                                             |                    |                -c
-monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B "001101"      -M  -P tcp    -u                       -N  -L 2
+monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B "001101"      -M  -O tcp    -u                       -N  -L 2
                                                                             |                    |                -t Tser,Tech
                                                                             |                    |                -i 0
                                                                             |                    |                -m
@@ -84,9 +84,9 @@ CommandParser::CommandParser(int argc, char* argv[])
 
     //提取stage
     itLast= itCurrent;
-    itCurrent += 1;
     while(true)
     {
+       ++itCurrent;
        if(itCurrent == command.end())
        {
             createStagePara(vector<string>(itLast, itCurrent));
@@ -97,41 +97,10 @@ CommandParser::CommandParser(int argc, char* argv[])
             createStagePara(vector<string>(itLast, itCurrent));
             itLast = itCurrent;
        }
-       ++itCurrent;
     }
 }
-/*------------------------------------------------------
-const unsigned NEGITIVE     =   0x0001;
-const unsigned PKT_COUNT    =   0x0002;
-const unsigned GAP_VALUE    =   0x0004;
-const unsigned SERIAL_NUM   =   0x0008;
-const unsigned BITMAP         =   0x0010;
-const unsigned FUNCTION     =   0x0020;
-const unsigned PKT_DROP     =   0x0040;
-const unsigned PKT_REPEAT   =   0x0080;
-const unsigned PKT_DELAY    =   0x0100;
-const unsigned PROTOCOL     =   0x0200;
 
-
-
-class Parameter
-{
-    private:
-        const static int MAX_INTERFACE_LEN = 40;
-    public:
-
-        DirectionFlag flag;
-        unsigned int    flag;
-        char            src[MAX_INTERFACE_LEN];
-        char            dst[MAX_INTERFACE_LEN];
-        unsigned int    gap;
-        unsigned int    stageId;
-        std::vector<unsigned int> choSequence;
-};
-
--------------------------------------------------------*/
-
-std::vector<std::string>  CommandParser::split(std::string s, char delim)
+vector<string>  CommandParser::split(string s, char delim)
 {
     std::vector<std::string> elems;
     if(s.empty())
@@ -165,44 +134,73 @@ bool CommandParser::createInterfacePara(const vector<string>& paraCmd)
     pPara->src = temp[0];
     pPara->dst = temp[1];
     pPara->stageId = 0;
-    vParameter.push_back(*pPara);
+    vPositiveParameter.push_back(*pPara);
+    vNegitiveParameter.push_back(*pPara);
     return true;
 
 }
+
+bool CommandParser::fillOption(Parameter* pPara, const vector<string>& paraOption)
+{
+    auto console = Logger::getLogger();
+    console -> debug("____________________");
+    for(auto it = paraOption.begin(); it != paraOption.end(); ++it)
+    {
+        console -> debug(*it);
+    }
+    
+    return true;
+}
+
 
 bool CommandParser::createStagePara(const vector<string>& paraCmd)
 {
     auto console = Logger::getLogger();
     Parameter* pPara = new Parameter();
     //此处应该添加错误校验
-    pPara -> stageId = atoi(optarg);
-    auto it = paraCmd.begin();
-    auto tailIt = it + 1;
+    if((paraCmd.size() <= 1) || (atoi(paraCmd[1].c_str()) == 0))
+    {
+        console -> error("Please start with a valid layer id [1..]");
+        return false;
+    }
+    pPara -> stageId = atoi(paraCmd[1].c_str());
+
+    auto itLast = paraCmd.begin() + 2;
+    decltype(itLast) itCurrent = itLast;
+    
     while(true)
     {
-       if(tailIt == paraCmd.end())
+       if(itCurrent == paraCmd.end())
        {
-            //处理从开始到结尾的所有
-            for(auto itDebug = it; itDebug != tailIt; it++)
-                console->debug(*it);
-            break;
+           if(fillOption(pPara, vector<string>(itLast,itCurrent)) != false)
+           {
+              if(*itLast == "-P")
+                vPositiveParameter.push_back(*pPara);
+              else
+                vNegitiveParameter.push_back(*pPara);
+              return true;
+           }
        }
-       if(*tailIt == "-N")
+       if(*itCurrent == "-P" && itCurrent != itLast)
        {
-            //处理两次
-            for(decltype(it) itDebug = it; itDebug != tailIt; it++)
-                console->debug(*it);
-            it = tailIt;
-            tailIt = paraCmd.end();
-            console->debug("again");
-            for(decltype(it) itDebug = it; itDebug != tailIt; it++)
-                console->debug(*it);
+            if(fillOption(pPara, vector<string>(itLast,itCurrent)) != false)
+                vNegitiveParameter.push_back(*pPara);
+            else
+                return false;
+            itLast = itCurrent;
+            
        }
-       ++tailIt;
+       if(*itCurrent == "-N" && itCurrent != itLast)
+       {
+           if(fillOption(pPara, vector<string>(itLast,itCurrent)) != false)
+               vNegitiveParameter.push_back(*pPara);
+           else
+               return false;
+            itLast = itCurrent;
+       }
+       ++itCurrent;
     }
-    pPara->stageId = 0;
-    vParameter.push_back(*pPara);
-    return true;
+    return false;
 }
 
 void CommandParser::printInfo(int info)
@@ -217,7 +215,7 @@ void CommandParser::printInfo(int info)
                  <<"                                                                            \t|          |        -f  0x0F,0x0F\n"
                  <<"                                                                            \t|          |        -w window\n"
                  <<"                                                                            \t|          |        -c\n"
-                 <<"monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B \"001101\"          \t-M      -P tcp      -u               -N ...   -L 2 ...\n"
+                 <<"monitor -I ens2f0,ens2f1 -L 1 -P   -C 200 -G 100     -B \"001101\"          \t-M      -O tcp      -u               -N ...   -L 2 ...\n"
                  <<"                                                                            \t|          |        -t Tser,Tech\n"
                  <<"                                                                            \t|          |        -i 0\n"
                  <<"                                                                            \t|          |        -m\n"
@@ -226,7 +224,7 @@ void CommandParser::printInfo(int info)
                  <<"                                                                            \t-R 1              -r remove\n"
                  <<"                                                     -F \"2x+3\"            \t-D\n"
                  <<"         interface       layer      count                                   \tDrop/Repeat/Modify/Timedelay\n"
-                 <<"                              direction    gap       Function/Sequence/Bitmap       protocol  options\n";
+                 <<"                              direction    gap       Function/Sequence/Bitmap       Object  options\n";
 
         break;
 
@@ -242,9 +240,4 @@ unsigned int CommandParser::getStageCount()
 
 Parameter& CommandParser::getParameter(int stage)
 {
-   if(stage >= vParameter.size())
-        exit(0);
-   else
-       return vParameter[stage];
 }
-

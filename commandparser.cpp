@@ -1,4 +1,5 @@
 #include "logger.h"
+#include "parameter.h"
 #include "commandparser.h"
 #include <cstring>
 #include <iostream>
@@ -7,6 +8,8 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <map>
+#include <utility>
 
 using namespace std;
 /*-------------------------------------------------------------------------------------------
@@ -139,16 +142,95 @@ bool CommandParser::createInterfacePara(const vector<string>& paraCmd)
     return true;
 
 }
+/*-------------------------------------------------------
+const unsigned PKT_COUNT    =   0x00000001;
+const unsigned GAP_VALUE    =   0x00000002;
+const unsigned SERIAL_NUM   =   0x00000004;
+const unsigned        =   0x00000008;
+const unsigned      =   0x00000010;
+const unsigned      =   0x00000020;
+const unsigned    =   0x00000040;
+const unsigned     =   0x00000080;
+const unsigned OBJECT       =   0x00000100;
+
+
+
+struct TcpHead
+{
+    unsigned srcPort;
+    unsigned dstPort;
+    unsigned sequenceSend;
+    unsigned sequenceAck;
+    unsigned headLen;
+    unsigned flag;
+    
+};
+class Parameter
+{
+    public:
+        unsigned int    flag;
+        std::string     src;
+        std::string     dst;
+        unsigned int    stageId;
+        unsigned int    pktCount;
+        unsigned int    gap;
+        std::string     bitmap;
+        std::vector<unsigned int> sequenceArray;
+        std::string     function;
+        unsigned int    repeatCount;
+        unsigned int    timeDelayCount;
+        std::string     object;
+};
+
+-------------------------------------------------------*/
 
 bool CommandParser::fillOption(Parameter* pPara, const vector<string>& paraOption)
 {
     auto console = Logger::getLogger();
-    console -> debug("____________________");
-    for(auto it = paraOption.begin(); it != paraOption.end(); ++it)
+    int i = 1;
+    map<string, int> aMap;
+    string initString("CGSBFTMRDO");
+    for(unsigned i = 0; i != initString.size(); i++)
     {
-        console -> debug(*it);
+        aMap[string("-")+initString[i]] = i + 1;
     }
-    
+    auto it = paraOption.begin();
+    while(it != paraOption.end())
+    { 
+        switch(aMap[*it])
+        {
+            case aMap[-C]:
+                pPara -> flag |= PKT_COUNT;
+                pPara -> pktCount = atoi(*(it + 1).c_str());
+            break;
+            case aMap[-G]:
+                pPara -> flag |= GAP_VALUE;
+                pPara -> pktCount = atoi(*(it + 1).c_str());
+            break;
+            case aMap[-S]:
+                pPara -> flag |= SEQUENCE_NUM;
+                pPara -> sequenceArray = *(it + 1);
+            break;
+            case aMap[-B]:BITMAP
+            break;
+            case aMap[-F]:FUNCTION
+            break;
+            case aMap[-T]:PKT_DELAY
+            break;
+            case aMap[-M]:
+            break;
+            case aMap[-D]:PKT_DROP
+            break;
+            case aMap[-R]:PKT_REPEAT
+            break;
+            case aMap[-R]:
+            break;
+            default:
+            console -> error("Wrong parameter!");
+            break;
+        }
+        ++it;
+    }
     return true;
 }
 
@@ -221,7 +303,7 @@ void CommandParser::printInfo(int info)
                  <<"                                                                            \t|          |        -m\n"
                  <<"                                                                            \t|          |        -o\n"
                  <<"                                                                            \t|          |_______ -e\n"
-                 <<"                                                                            \t-R 1              -r remove\n"
+                 <<"                                                                            \t-R 1                -r remove\n"
                  <<"                                                     -F \"2x+3\"            \t-D\n"
                  <<"         interface       layer      count                                   \tDrop/Repeat/Modify/Timedelay\n"
                  <<"                              direction    gap       Function/Sequence/Bitmap       Object  options\n";
@@ -241,3 +323,4 @@ unsigned int CommandParser::getStageCount()
 Parameter& CommandParser::getParameter(int stage)
 {
 }
+

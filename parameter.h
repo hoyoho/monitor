@@ -15,20 +15,34 @@ const unsigned FUNCTION     =   0x00000040;
 const unsigned PKT_DROP     =   0x00000080;
 const unsigned PKT_REPEAT   =   0x00000100;
 const unsigned PKT_DELAY    =   0x00000200;
-const unsigned PROTOCOL     =   0x00000400;
+const unsigned OBJECT       =   0x00000400;
 
 
-
+struct TcpHead
+{
+    unsigned srcPort;
+    unsigned dstPort;
+    unsigned sequenceSend;
+    unsigned sequenceAck;
+    unsigned headLen;
+    unsigned flag;
+    
+};
 class Parameter
 {
     public:
         unsigned int    flag;
         std::string     src;
         std::string     dst;
-        unsigned int    gap;
         unsigned int    stageId;
-        std::vector<unsigned int> choSequence;
+        unsigned int    pktCount;
+        unsigned int    gap;
+        std::string     bitmap;
+        std::vector<unsigned int> sequenceArray;
+        std::string     function;
+        unsigned int    repeatCount;
+        unsigned int    timeDelayCount;
+        std::string     object;
 };
 
 #endif
-
